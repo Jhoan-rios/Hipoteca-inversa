@@ -1,28 +1,43 @@
-"""Vista Kivy para el cálculo de hipoteca inversa."""
-
 from __future__ import annotations
 
 import sys
 from pathlib import Path
 
+# Permite ejecutar este archivo directamente (clic en "Run" del IDE) sin
+# depender de que el usuario lance el proyecto como módulo desde la raíz.
 _RAIZ_PROYECTO = Path(__file__).resolve().parents[3]
 if str(_RAIZ_PROYECTO) not in sys.path:
     sys.path.insert(0, str(_RAIZ_PROYECTO))
 
 from kivy.app import App
 from kivy.lang import Builder
+from kivy.properties import StringProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.textinput import TextInput
-from src.model.logica_hipoteca_inversa import ParametrosHipoteca
+
+from src.model import logica_hipoteca_inversa
+from src.model.logica_hipoteca_inversa import (
+    HipotecaInversaError,
+    ParametrosHipoteca,
+    calcular_monto_prestamo,
+)
+
+COLOR_CAMPO_NORMAL = (1, 1, 1, 1)
+COLOR_CAMPO_ERROR = (1, 0.85, 0.85, 1)
+
 
 class CampoInvalido(Exception):
-    """Error de FORMATO en un campo del formulario (no es un error de negocio)."""
+    """Error de FORMATO en un campo del formulario (no es un error de negocio).
+
+    Guarda una referencia al widget para poder resaltarlo visualmente.
+    """
 
     def __init__(self, nombre_campo: str, widget: TextInput) -> None:
         self.widget = widget
         super().__init__(
-            f"El campo '{nombre_campo}' es obligatorio y debe ser numérico.")
-        
+            f"El campo '{nombre_campo}' es obligatorio y debe ser numérico."
+        )
+
 
 KV = """
 <CampoEntrada@BoxLayout>:
@@ -45,6 +60,9 @@ KV = """
         multiline: False
         input_filter: "float"
         hint_text: root.texto_ayuda
+        background_color: 1, 1, 1, 1
+        on_text_validate: app.root.calcular()
+        on_text: self.background_color = (1, 1, 1, 1)
 
 
 PantallaHipoteca:
@@ -58,6 +76,12 @@ PantallaHipoteca:
     orientation: "vertical"
     padding: "20dp"
     spacing: "10dp"
+    canvas.before:
+        Color:
+            rgba: 0.97, 0.97, 0.99, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
 
     Label:
         text: "Calculadora de Hipoteca Inversa"
@@ -65,6 +89,7 @@ PantallaHipoteca:
         size_hint_y: None
         height: "44dp"
         bold: True
+        color: 0.15, 0.15, 0.35, 1
 
     CampoEntrada:
         id: campo_valor
@@ -86,23 +111,91 @@ PantallaHipoteca:
         etiqueta: "Plazo en meses"
         texto_ayuda: "Ej: 180 (máx. 240)"
 
-    Button:
-        text: "Calcular"
+    BoxLayout:
         size_hint_y: None
         height: "48dp"
-        on_release: root.calcular()
+        spacing: "10dp"
+
+        Button:
+            text: "Calcular"
+            bold: True
+            background_color: 0.25, 0.5, 0.85, 1
+            on_release: root.calcular()
+
+        Button:
+            text: "Limpiar"
+            background_color: 0.7, 0.7, 0.7, 1
+            on_release: root.limpiar()
+
+    Label:
+        id: etiqueta_error
+        text: root.mensaje_error
+        color: 0.75, 0.1, 0.1, 1
+        size_hint_y: None
+        height: "40dp"
+        text_size: self.size
+        halign: "left"
+        valign: "top"
+
+    BoxLayout:
+        orientation: "vertical"
+        padding: "10dp"
+        canvas.before:
+            Color:
+                rgba: 0.90, 0.93, 0.98, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+        Label:
+            text: root.resultado_texto
+            text_size: self.width, None
+            halign: "left"
+            valign: "top"
+            color: 0,0,0,1
 """
 
 
 class PantallaHipoteca(BoxLayout):
+    """Pantalla principal: captura datos, valida formato y muestra resultados."""
+
+    mensaje_error = StringProperty("")
+    resultado_texto = StringProperty("Los resultados aparecerán aquí.")
+
+    # -- Acciones disparadas desde la interfaz -----------------------------
 
     def calcular(self) -> None:
+        """Orquesta lectura, validación de formato, cálculo y presentación."""
+        self.mensaje_error = ""
+
         try:
             parametros = self._leer_parametros()
         except CampoInvalido as error:
-            print(error)  # se reemplazará por un mensaje en pantalla (commit 5)
+            self._mostrar_error_de_campo(error)
             return
-        print(parametros)  # verificación temporal, se reemplaza en el siguiente commit
+
+        try:
+            monto_prestamo = calcular_monto_prestamo(parametros)
+            cuota, abonos, intereses = logica_hipoteca_inversa.desembolso_mensual(
+                parametros
+            )
+        except HipotecaInversaError as error:
+            self.mensaje_error = str(error)
+            return
+
+        self.resultado_texto = self._formatear_resultado(
+            monto_prestamo, cuota, abonos, intereses
+        )
+
+    def limpiar(self) -> None:
+        """Funcionalidad extra: restablece el formulario a su estado inicial."""
+        for campo in (self.valor_inmueble, self.porcentaje, self.tasa, self.plazo):
+            campo.text = ""
+            campo.background_color = COLOR_CAMPO_NORMAL
+        self.mensaje_error = ""
+        self.resultado_texto = "Los resultados aparecerán aquí."
+
+    # -- Lectura y validación de formato de entrada -------------------------
 
     def _leer_parametros(self) -> ParametrosHipoteca:
         """Convierte el texto de los campos a `ParametrosHipoteca`.
@@ -139,16 +232,24 @@ class PantallaHipoteca(BoxLayout):
             return float(campo.text)
         except ValueError as error:
             raise CampoInvalido(nombre_visible, campo) from error
-    def _leer_campo_numerico(campo: TextInput, nombre_visible: str) -> float:
-        """Lee y convierte el texto de un campo a `float`.
 
-        Raises:
-            CampoInvalido: si el texto está vacío o no es un número.
-        """
-        try:
-            return float(campo.text)
-        except ValueError as error:
-            raise CampoInvalido(nombre_visible, campo) from error
+    def _mostrar_error_de_campo(self, error: CampoInvalido) -> None:
+        """Muestra el mensaje de error y resalta visualmente el campo afectado."""
+        self.mensaje_error = str(error)
+        error.widget.background_color = COLOR_CAMPO_ERROR
+
+    # -- Presentación ---------------------------------------------------------
+
+    @staticmethod
+    def _formatear_resultado(
+        monto_prestamo: float, cuota: float, abonos: float, intereses: float
+    ) -> str:
+        return (
+            f"Monto del préstamo: ${monto_prestamo:,.2f}\n"
+            f"Cuota mensual: ${cuota:,.2f}\n"
+            f"Total abonos: ${abonos:,.2f}\n"
+            f"Total intereses: ${intereses:,.2f}"
+        )
 
 
 class HipotecaInversaApp(App):
