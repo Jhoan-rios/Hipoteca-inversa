@@ -12,6 +12,17 @@ if str(_RAIZ_PROYECTO) not in sys.path:
 from kivy.app import App
 from kivy.lang import Builder
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.textinput import TextInput
+from src.model.logica_hipoteca_inversa import ParametrosHipoteca
+
+class CampoInvalido(Exception):
+    """Error de FORMATO en un campo del formulario (no es un error de negocio)."""
+
+    def __init__(self, nombre_campo: str, widget: TextInput) -> None:
+        self.widget = widget
+        super().__init__(
+            f"El campo '{nombre_campo}' es obligatorio y debe ser numérico.")
+        
 
 KV = """
 <CampoEntrada@BoxLayout>:
