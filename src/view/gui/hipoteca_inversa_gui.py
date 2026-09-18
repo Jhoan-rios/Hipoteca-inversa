@@ -95,10 +95,60 @@ PantallaHipoteca:
 
 
 class PantallaHipoteca(BoxLayout):
-    """Pantalla principal: formulario de entrada (aún sin lógica de cálculo)."""
 
     def calcular(self) -> None:
-        """Se implementará en el siguiente commit."""
+        try:
+            parametros = self._leer_parametros()
+        except CampoInvalido as error:
+            print(error)  # se reemplazará por un mensaje en pantalla (commit 5)
+            return
+        print(parametros)  # verificación temporal, se reemplaza en el siguiente commit
+
+    def _leer_parametros(self) -> ParametrosHipoteca:
+        """Convierte el texto de los campos a `ParametrosHipoteca`.
+
+        Raises:
+            CampoInvalido: si algún campo está vacío o no es numérico.
+        """
+        valor_inmueble = self._leer_campo_numerico(
+            self.valor_inmueble, "Valor del inmueble"
+        )
+        porcentaje = self._leer_campo_numerico(
+            self.porcentaje, "Porcentaje de desembolso"
+        ) / 100
+        tasa_mensual = self._leer_campo_numerico(
+            self.tasa, "Tasa de interés mensual"
+        ) / 100
+        plazo_meses = int(self._leer_campo_numerico(self.plazo, "Plazo en meses"))
+
+        return ParametrosHipoteca(
+            valor_inmueble=valor_inmueble,
+            porcentaje=porcentaje,
+            tasa_mensual=tasa_mensual,
+            plazo_meses=plazo_meses,
+        )
+
+    @staticmethod
+    def _leer_campo_numerico(campo: TextInput, nombre_visible: str) -> float:
+        """Lee y convierte el texto de un campo a `float`.
+
+        Raises:
+            CampoInvalido: si el texto está vacío o no es un número.
+        """
+        try:
+            return float(campo.text)
+        except ValueError as error:
+            raise CampoInvalido(nombre_visible, campo) from error
+    def _leer_campo_numerico(campo: TextInput, nombre_visible: str) -> float:
+        """Lee y convierte el texto de un campo a `float`.
+
+        Raises:
+            CampoInvalido: si el texto está vacío o no es un número.
+        """
+        try:
+            return float(campo.text)
+        except ValueError as error:
+            raise CampoInvalido(nombre_visible, campo) from error
 
 
 class HipotecaInversaApp(App):
