@@ -4,10 +4,10 @@ Aplicación en Python para simular el cálculo de una **hipoteca inversa**, con 
 
 ## Integrantes del equipo
 
-| Nombre | Rol / GitHub |
+| Nombre | GitHub |
 |---|---|
-| Jhoan Ríos | (https://github.com/Jhoan-rios) |
-| Jose Berrio | _Pendiente_ |
+| Jhoan Ríos | [@jhoan-rios](https://github.com/jhoan-rios) |
+| Jose Berrio | [@JoseBerrioC](https://github.com/JoseBerrioC) |
 
 ## Estructura del proyecto
 
