@@ -11,6 +11,7 @@ if str(_RAIZ_PROYECTO) not in sys.path:
 
 from kivy.app import App
 from kivy.lang import Builder
+from kivy.config import Config
 from kivy.properties import StringProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.textinput import TextInput
@@ -21,6 +22,8 @@ from src.model.logica_hipoteca_inversa import (
     ParametrosHipoteca,
     calcular_monto_prestamo,
 )
+
+Config.set("kivy", "window_icon", "assets/icono.ico")
 
 COLOR_CAMPO_NORMAL = (1, 1, 1, 1)
 COLOR_CAMPO_ERROR = (1, 0.85, 0.85, 1)
