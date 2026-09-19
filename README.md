@@ -94,7 +94,7 @@ La GUI (`src/view/gui/hipoteca_inversa_gui.py`), construida con **Kivy**, ofrece
  
 Si solo quieres **usar la aplicación** sin instalar Python ni dependencias, descarga el ejecutable ya compilado:
  
-1. Ve a la sección [**Releases**](https://github.com/Jose-Dv/Hipoteca-inversa/releases) del repositorio.
+1. Ve a la sección [**Releases**](https://github.com/Jhoan-rios/Hipoteca-inversa/releases) del repositorio.
 2. Descarga el archivo `.zip` de la versión más reciente (ej. `HipotecaInversa-v1.0-Windows.zip`).
 3. Descomprime el `.zip` completo en cualquier carpeta de tu equipo — **no muevas ni copies solo el `.exe` por separado**, necesita los archivos `.dll` que lo acompañan.
 4. Haz doble clic en `HipotecaInversa.exe` dentro de la carpeta descomprimida.
